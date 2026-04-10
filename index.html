@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Club JEL — Tracker de Implementación</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f4f2;color:#1a1a1a;font-size:14px;line-height:1.5}
+:root{
+  --navy:#0D1B2A;--gold:#C9A84C;--lgray:#f4f4f2;--mgray:#e0e0de;--dgray:#777;
+  --teal:#0F6E56;--teal-l:#E1F5EE;--blue:#185FA5;--blue-l:#E6F1FB;
+  --purp:#534AB7;--purp-l:#EEEDFE;--amber:#854F0B;--amber-l:#FAEEDA;
+  --red:#A32D2D;--red-l:#FCEBEB;--green:#27500A;--green-l:#EAF3DE;
+  --slate:#36454F;--slate-l:#EEF2F4;--pink:#72243E;--pink-l:#FBEAF0;
+}
+.app{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
+.topbar{background:var(--navy);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:54px;gap:16px}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-sub{font-size:12px;color:#9ca3af}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.last-updated{font-size:11px;color:#9ca3af}
+.export-btn{font-size:12px;padding:5px 12px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;cursor:pointer;font-weight:600}
+.export-btn:hover{background:#b8923e}
+.main{display:grid;grid-template-columns:240px 1fr;height:calc(100vh - 54px)}
+.sidebar{background:#fff;border-right:1px solid var(--mgray);padding:16px 0;overflow-y:auto}
+.content{overflow-y:auto;padding:24px}
+.sidebar-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--dgray);padding:0 16px;margin:12px 0 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;font-size:13px;color:#374151;border:none;background:transparent;width:100%;text-align:left;transition:background .1s}
+.nav-item:hover{background:#f3f4f6}
+.nav-item.active{background:var(--blue-l);color:var(--blue);font-weight:500}
+.nav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.nav-count{margin-left:auto;font-size:11px;background:#e5e7eb;color:#6b7280;padding:1px 7px;border-radius:10px;font-weight:500}
+.progress-mini{height:3px;background:var(--mgray);border-radius:2px;margin:2px 0 6px 18px;width:calc(100% - 34px)}
+.progress-mini-fill{height:100%;border-radius:2px;transition:width .4s}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:24px}
+.metric-card{background:#fff;border:0.5px solid var(--mgray);border-radius:10px;padding:14px}
+.metric-num{font-size:26px;font-weight:600;line-height:1;margin-bottom:4px}
+.metric-lbl{font-size:11px;color:var(--dgray);text-transform:uppercase;letter-spacing:.04em}
+.metric-sub{font-size:12px;color:var(--dgray);margin-top:6px}
+.progress-bar{height:6px;background:var(--mgray);border-radius:3px;width:100%;overflow:hidden;margin-top:8px}
+.progress-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.gantt-wrap{background:#fff;border:0.5px solid var(--mgray);border-radius:10px;padding:16px;margin-bottom:24px;overflow-x:auto}
+.gantt-row{display:grid;grid-template-columns:180px 1fr;gap:8px;margin-bottom:3px;align-items:center}
+.gantt-label{font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-track{display:flex;gap:2px;height:16px;align-items:center}
+.gantt-cell{flex:1;height:13px;border-radius:2px}
+.task-section{background:#fff;border:0.5px solid var(--mgray);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.task-section-header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--mgray);cursor:pointer;user-select:none}
+.task-section-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.section-meta{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--dgray)}
+.task-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.task-table th{text-align:left;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--dgray);border-bottom:1px solid var(--mgray);background:#fafaf9}
+.task-table td{padding:8px 10px;border-bottom:0.5px solid #f0f0ee;font-size:12px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+.task-table tr:last-child td{border-bottom:none}
+.task-table tr:hover td{background:#fafaf9}
+.task-id{font-family:monospace;color:var(--blue);font-size:11px;white-space:nowrap}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer}
+.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tag-pill{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap}
+.owner-avatar{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0}
+.prio-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chevron{transition:transform .2s;font-size:12px;color:var(--dgray)}
+.collapsed .chevron{transform:rotate(-90deg)}
+.task-table-wrap{overflow:hidden;transition:max-height .3s}
+.collapsed .task-table-wrap{max-height:0!important}
+.dep-badge{font-size:10px;color:var(--dgray);font-family:monospace;white-space:normal;word-break:break-all}
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:4px 11px;border:0.5px solid var(--mgray);border-radius:6px;background:#fff;font-size:12px;cursor:pointer;color:#374151;transition:all .1s;white-space:nowrap}
+.filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.filter-btn:hover:not(.active){background:#f3f4f6}
+.search-box{flex:1;max-width:200px;padding:5px 10px;border:0.5px solid var(--mgray);border-radius:6px;font-size:12px;background:#fff}
+.alert-card{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;border:0.5px solid;margin-bottom:6px}
+.alert-text{font-size:12px;line-height:1.5}
+.changelog-item{display:flex;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--mgray)}
+.changelog-item:last-child{border:none}
+.cl-time{font-size:11px;color:var(--dgray);white-space:nowrap;min-width:80px}
+.cl-text{font-size:12px;color:#374151;line-height:1.5}
+.page-title{font-size:18px;font-weight:600;margin-bottom:6px}
+.page-sub{font-size:13px;color:var(--dgray);margin-bottom:20px}
+.section-title{font-size:13px;font-weight:600;margin-bottom:10px;color:#374151}
+.page{display:none}
+.page.active{display:block}
+.tag-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding:12px 16px;background:#fff;border:0.5px solid var(--mgray);border-radius:10px}
+.tag-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#374151}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal-box{background:#fff;border-radius:14px;padding:28px 32px;width:340px;text-align:center}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:6px;color:#1a1a1a}
+.modal-sub{font-size:13px;color:var(--dgray);margin-bottom:20px}
+.modal-input{width:100%;padding:10px 14px;border:1px solid var(--mgray);border-radius:8px;font-size:14px;text-align:center;letter-spacing:.2em;outline:none;margin-bottom:8px}
+.modal-input:focus{border-color:var(--navy)}
+.modal-error{font-size:12px;color:var(--red);min-height:18px;margin-bottom:10px}
+.modal-btn{width:100%;padding:10px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.modal-btn:hover{background:#1a2f45}
+.danger-btn{font-size:12px;padding:5px 12px;background:transparent;color:#ff6b6b;border:1px solid #ff6b6b;border-radius:6px;cursor:pointer;font-weight:500}
+.danger-btn:hover{background:#FCEBEB}
+.role-badge{font-size:11px;padding:3px 10px;border-radius:10px;background:var(--gold);color:var(--navy);font-weight:700;margin-left:8px}
+</style>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal-box">
+    <div style="font-size:28px;margin-bottom:12px">🔐</div>
+    <div class="modal-title">Club JEL — Tracker</div>
+    <div class="modal-sub">Ingresa tu clave para acceder</div>
+    <input class="modal-input" type="password" id="auth-input" placeholder="••••••" maxlength="20" onkeydown="if(event.key==='Enter')checkAuth()">
+    <div class="modal-error" id="auth-error"></div>
+    <button class="modal-btn" onclick="checkAuth()">Ingresar</button>
+    <div style="font-size:11px;color:var(--dgray);margin-top:14px">Contacta al administrador del proyecto si no tienes acceso.</div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal" style="display:none">
+  <div class="modal-box">
+    <div style="font-size:28px;margin-bottom:12px" id="confirm-icon">⚠️</div>
+    <div class="modal-title" id="confirm-title">¿Confirmar acción?</div>
+    <div class="modal-sub" id="confirm-sub">Esta acción no se puede deshacer.</div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--mgray);background:#fff;font-size:13px;cursor:pointer" onclick="closeConfirm()">Cancelar</button>
+      <button style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer" id="confirm-ok-btn" onclick="confirmAction()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Club JEL — Tracker de Implementación</div>
+    <div class="topbar-sub">JuegaenLínea · Semana actual: 5 de 24 · Fase 1 en curso</div>
+  </div>
+  <div class="topbar-right">
+    <span class="last-updated">Última actualización: Hoy, 09:14 am</span>
+    <span class="role-badge" id="role-badge">Admin</span>
+    <button class="danger-btn" id="btn-reset" onclick="openConfirm('reset')" title="Resetear todas las actividades a Pendiente">Reiniciar todo</button>
+    <button class="danger-btn" id="btn-clear-log" onclick="openConfirm('clearlog')" title="Borrar historial de cambios">Borrar historial</button>
+    <button class="export-btn" onclick="exportCSV()">Exportar CSV</button>
+    <button onclick="logout()" title="Cerrar sesión" style="font-size:12px;padding:5px 12px;background:transparent;color:#9ca3af;border:1px solid #4b5563;border-radius:6px;cursor:pointer;font-weight:500" onmouseover="this.style.color='#fff';this.style.borderColor='#9ca3af'" onmouseout="this.style.color='#9ca3af';this.style.borderColor='#4b5563'">Salir</button>
+  </div>
+</div>
+
+<div class="main">
+<nav class="sidebar">
+  <div class="sidebar-label">Vistas</div>
+  <button class="nav-item active" onclick="showPage('dashboard',this)"><div class="nav-dot" style="background:var(--navy)"></div>Dashboard general</button>
+  <button class="nav-item" onclick="showPage('tasks',this)"><div class="nav-dot" style="background:var(--blue)"></div>Todas las actividades<span class="nav-count" id="total-count">0</span></button>
+  <button class="nav-item" onclick="showPage('gantt',this)"><div class="nav-dot" style="background:var(--teal)"></div>Timeline / Gantt</button>
+  <button class="nav-item" onclick="showPage('alerts',this)"><div class="nav-dot" style="background:var(--red)"></div>Alertas y bloqueos<span class="nav-count" id="alert-count" style="background:var(--red-l);color:var(--red)">5</span></button>
+  <button class="nav-item" onclick="showPage('changelog',this)"><div class="nav-dot" style="background:var(--dgray)"></div>Historial de cambios</button>
+
+  <div class="sidebar-label">Por fase</div>
+  <button class="nav-item" onclick="filterPhase('F1',this)"><div class="nav-dot" style="background:var(--teal)"></div>Fase 1 — Base y Bronce<span class="nav-count" id="f1-count">0</span></button>
+  <div class="progress-mini"><div class="progress-mini-fill" id="f1-bar" style="background:var(--teal)"></div></div>
+  <button class="nav-item" onclick="filterPhase('F2',this)"><div class="nav-dot" style="background:var(--blue)"></div>Fase 2 — Niveles VIP<span class="nav-count" id="f2-count">0</span></button>
+  <div class="progress-mini"><div class="progress-mini-fill" id="f2-bar" style="background:var(--blue)"></div></div>
+  <button class="nav-item" onclick="filterPhase('F3',this)"><div class="nav-dot" style="background:var(--purp)"></div>Fase 3 — Monitoreo<span class="nav-count" id="f3-count">0</span></button>
+  <div class="progress-mini"><div class="progress-mini-fill" id="f3-bar" style="background:var(--purp)"></div></div>
+
+  <div class="sidebar-label">Por tipo</div>
+  <button class="nav-item" onclick="filterTag('Dev',this)"><div class="nav-dot" style="background:var(--blue)"></div>Dev</button>
+  <button class="nav-item" onclick="filterTag('Config',this)"><div class="nav-dot" style="background:var(--amber)"></div>Config</button>
+  <button class="nav-item" onclick="filterTag('QA',this)"><div class="nav-dot" style="background:var(--teal)"></div>QA</button>
+  <button class="nav-item" onclick="filterTag('Legal',this)"><div class="nav-dot" style="background:var(--red)"></div>Legal</button>
+  <button class="nav-item" onclick="filterTag('Proceso',this)"><div class="nav-dot" style="background:var(--green)"></div>Proceso</button>
+  <button class="nav-item" onclick="filterTag('Datos',this)"><div class="nav-dot" style="background:var(--purp)"></div>Datos</button>
+  <button class="nav-item" onclick="filterTag('Comms',this)"><div class="nav-dot" style="background:var(--pink)"></div>Comms</button>
+</nav>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="page-title">Dashboard general</div>
+  <div class="page-sub">Semana 5 de 24 · Próximo hito: Parámetros Bronce validados (Sem. 10)</div>
+  <div class="metrics-grid">
+    <div class="metric-card"><div class="metric-num" id="m-total" style="color:var(--navy)">0</div><div class="metric-lbl">Actividades totales</div><div class="metric-sub" id="m-pct-done"></div></div>
+    <div class="metric-card"><div class="metric-num" id="m-done" style="color:var(--teal)">0</div><div class="metric-lbl">Completadas</div><div class="progress-bar"><div class="progress-bar-fill" id="m-done-bar" style="background:var(--teal);width:0%"></div></div></div>
+    <div class="metric-card"><div class="metric-num" id="m-prog" style="color:var(--blue)">0</div><div class="metric-lbl">En progreso</div><div class="progress-bar"><div class="progress-bar-fill" id="m-prog-bar" style="background:var(--blue);width:0%"></div></div></div>
+    <div class="metric-card"><div class="metric-num" id="m-block" style="color:var(--red)">0</div><div class="metric-lbl">Bloqueadas</div><div class="metric-sub" id="m-block-sub"></div></div>
+  </div>
+  <div class="gantt-wrap"><div class="section-title">Timeline por módulo</div><div id="gantt-mini"></div></div>
+  <div class="section-title">Alertas activas</div>
+  <div id="alerts-list"></div>
+</div>
+
+<!-- TASKS -->
+<div class="page" id="page-tasks">
+  <div class="page-title">Todas las actividades</div>
+  <div class="page-sub">Clic en el estado para actualizarlo. Incluye actividades de Dev, Config, QA, Legal, Proceso, Datos y Comms.</div>
+  <div class="tag-legend" id="tag-legend"></div>
+  <div class="filter-bar">
+    <input class="search-box" type="text" placeholder="Buscar..." oninput="searchTasks(this.value)">
+    <button class="filter-btn active" onclick="filterStatus('all',this)">Todos</button>
+    <button class="filter-btn" onclick="filterStatus('pending',this)">Pendiente</button>
+    <button class="filter-btn" onclick="filterStatus('progress',this)">En progreso</button>
+    <button class="filter-btn" onclick="filterStatus('review',this)">En revisión</button>
+    <button class="filter-btn" onclick="filterStatus('done',this)">Completado</button>
+    <button class="filter-btn" onclick="filterStatus('blocked',this)">Bloqueado</button>
+  </div>
+  <div id="task-sections"></div>
+</div>
+
+<!-- GANTT -->
+<div class="page" id="page-gantt">
+  <div class="page-title">Timeline / Gantt — 24 semanas</div>
+  <div class="page-sub">La semana actual (5) está marcada en dorado. Colores indican estado predominante por semana.</div>
+  <div id="gantt-full" style="background:#fff;border:0.5px solid var(--mgray);border-radius:10px;padding:16px;overflow-x:auto"></div>
+</div>
+
+<!-- ALERTS -->
+<div class="page" id="page-alerts">
+  <div class="page-title">Alertas y bloqueos</div>
+  <div class="page-sub">Elementos que requieren atención inmediata, tienen dependencias no resueltas o riesgo de retraso.</div>
+  <div id="alerts-full"></div>
+</div>
+
+<!-- CHANGELOG -->
+<div class="page" id="page-changelog">
+  <div class="page-title">Historial de cambios</div>
+  <div class="page-sub">Registro automático de actualizaciones de estado con responsable y timestamp.</div>
+  <div style="background:#fff;border:0.5px solid var(--mgray);border-radius:10px;padding:16px" id="changelog-list"></div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+const CW=5; // current week
+
+const MODULES={
+  "Motor de Puntos":       {color:"#0F6E56",light:"#E1F5EE",weeks:[1,10]},
+  "Cashback y Rakeback":   {color:"#185FA5",light:"#E6F1FB",weeks:[1,18]},
+  "Gestión de Niveles":    {color:"#0F6E56",light:"#E1F5EE",weeks:[5,18]},
+  "Bonos y Recompensas":   {color:"#534AB7",light:"#EEEDFE",weeks:[3,16]},
+  "Gamificación":          {color:"#854F0B",light:"#FAEEDA",weeks:[4,24]},
+  "Tienda JEL":            {color:"#27500A",light:"#EAF3DE",weeks:[6,18]},
+  "Dashboard":             {color:"#36454F",light:"#EEF2F4",weeks:[4,14]},
+  "Notificaciones":        {color:"#185FA5",light:"#E6F1FB",weeks:[2,16]},
+  "Integraciones":         {color:"#534AB7",light:"#EEEDFE",weeks:[1,20]},
+  "Reporting":             {color:"#854F0B",light:"#FAEEDA",weeks:[3,24]},
+  "Legal y Compliance":    {color:"#A32D2D",light:"#FCEBEB",weeks:[1,14]},
+  "Proceso y Operaciones": {color:"#27500A",light:"#EAF3DE",weeks:[3,24]},
+  "Comunicaciones":        {color:"#72243E",light:"#FBEAF0",weeks:[1,16]},
+  "Datos y Análisis":      {color:"#534AB7",light:"#EEEDFE",weeks:[8,24]},
+};
+
+const TAG_COLORS={
+  Dev:    {bg:"#E6F1FB",fg:"#185FA5"},
+  Config: {bg:"#FAEEDA",fg:"#854F0B"},
+  QA:     {bg:"#E1F5EE",fg:"#0F6E56"},
+  Legal:  {bg:"#FCEBEB",fg:"#A32D2D"},
+  Proceso:{bg:"#EAF3DE",fg:"#27500A"},
+  Datos:  {bg:"#EEEDFE",fg:"#534AB7"},
+  Comms:  {bg:"#FBEAF0",fg:"#72243E"},
+};
+
+const OWNER_COLORS=["#185FA5","#0F6E56","#534AB7","#854F0B","#A32D2D","#27500A","#72243E","#36454F"];
+const OWNERS={"Tech Lead":0,"Dev Backend":1,"Dev Frontend":2,"QA Eng":3,"Legal":4,"Ops/VIP":5,"Datos Analyst":6,"Comms":7,"Producto":0};
+
+const T=[
+  // ── MOTOR DE PUNTOS ──────────────────────────────────────────────────────
+  {id:"PJ-01",mod:"Motor de Puntos",tag:"Dev",desc:"Cálculo de PJ por apuesta según producto",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[1,4],status:"progress",dep:""},
+  {id:"PJ-02",mod:"Motor de Puntos",tag:"Config",desc:"Multiplicador de PJ por nivel (1x/1.5x/1.8x/2x)",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[3,4],status:"pending",dep:"PJ-01"},
+  {id:"PJ-03",mod:"Motor de Puntos",tag:"Dev",desc:"PJ por depósito — agrupación ISO semanal",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[2,5],status:"progress",dep:""},
+  {id:"PJ-04",mod:"Motor de Puntos",tag:"Config",desc:"Asignación de semana ISO al mes correcto (lunes)",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[3,4],status:"pending",dep:"PJ-03"},
+  {id:"PJ-05",mod:"Motor de Puntos",tag:"Dev",desc:"PJ por bono de login diario — racha 5 días",fase:"F1",prio:"Media",owner:"Dev Frontend",sem:[5,7],status:"pending",dep:""},
+  {id:"PJ-06",mod:"Motor de Puntos",tag:"Dev",desc:"PJ por acción única (app y RRSS)",fase:"F1",prio:"Media",owner:"Dev Backend",sem:[6,8],status:"pending",dep:"IN-05"},
+  {id:"PJ-07",mod:"Motor de Puntos",tag:"Dev",desc:"PJ por referido — 250 PJ al cumplir condiciones",fase:"F1",prio:"Media",owner:"Dev Backend",sem:[5,7],status:"pending",dep:"IN-07"},
+  {id:"PJ-08",mod:"Motor de Puntos",tag:"Dev",desc:"Idempotencia de acreditación por referencia externa",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[2,4],status:"progress",dep:""},
+  {id:"PJ-09",mod:"Motor de Puntos",tag:"Dev",desc:"Job reseteo mensual de PJ (después de NV-01)",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[7,9],status:"pending",dep:"PJ-01"},
+  // ── CASHBACK Y RAKEBACK ──────────────────────────────────────────────────
+  {id:"CB-01",mod:"Cashback y Rakeback",tag:"Dev",desc:"Cashback semanal Bronce 10% — tope S/.350/sem",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[3,6],status:"progress",dep:"PJ-01"},
+  {id:"CB-02",mod:"Cashback y Rakeback",tag:"Dev",desc:"Cashback semanal VIP Silver 10% — sin tope",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[11,13],status:"pending",dep:"CB-01"},
+  {id:"CB-03",mod:"Cashback y Rakeback",tag:"Dev",desc:"Cashback semanal VIP Gold 12% — sin tope",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[11,13],status:"pending",dep:"CB-01"},
+  {id:"CB-04",mod:"Cashback y Rakeback",tag:"Dev",desc:"Cashback diario VIP Platinum 5% — sin tope",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[12,14],status:"pending",dep:"CB-01"},
+  {id:"CB-05",mod:"Cashback y Rakeback",tag:"Dev",desc:"Rakeback semanal Platinum 1% sobre total apostado",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[11,13],status:"blocked",dep:"LE-02"},
+  {id:"CB-06",mod:"Cashback y Rakeback",tag:"Dev",desc:"Idempotencia y reintento del batch semanal",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[4,6],status:"pending",dep:""},
+  {id:"CB-07",mod:"Cashback y Rakeback",tag:"Config",desc:"Forma de acreditación por nivel (bono vs. cash)",fase:"F2",prio:"Media",owner:"Dev Backend",sem:[13,14],status:"pending",dep:"CB-02"},
+  {id:"CB-08",mod:"Cashback y Rakeback",tag:"Config",desc:"Alerta automática de exposición financiera",fase:"F3",prio:"Alta",owner:"Datos Analyst",sem:[19,20],status:"pending",dep:"RP-01"},
+  // ── GESTIÓN DE NIVELES ───────────────────────────────────────────────────
+  {id:"NV-01",mod:"Gestión de Niveles",tag:"Dev",desc:"Job evaluación mensual de nivel — día 1",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[7,9],status:"pending",dep:"PJ-09"},
+  {id:"NV-02",mod:"Gestión de Niveles",tag:"Dev",desc:"Upgrade automático con bono de ascenso",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[12,14],status:"pending",dep:"NV-01"},
+  {id:"NV-03",mod:"Gestión de Niveles",tag:"Config",desc:"Período de gracia por descenso (30/60/90 días)",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[13,15],status:"pending",dep:"NV-01"},
+  {id:"NV-04",mod:"Gestión de Niveles",tag:"Dev",desc:"Alerta de riesgo de descenso — día 15 del mes",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[13,15],status:"pending",dep:"NT-02"},
+  {id:"NV-05",mod:"Gestión de Niveles",tag:"Dev",desc:"Degradación automática al vencer gracia",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[14,16],status:"pending",dep:"NV-03"},
+  {id:"NV-06",mod:"Gestión de Niveles",tag:"Dev",desc:"Contador de gracia visible en dashboard",fase:"F2",prio:"Media",owner:"Dev Frontend",sem:[14,15],status:"pending",dep:"NV-03"},
+  {id:"NV-07",mod:"Gestión de Niveles",tag:"Config",desc:"Umbrales de nivel en Level_Config",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[2,3],status:"done",dep:""},
+  {id:"NV-08",mod:"Gestión de Niveles",tag:"Dev",desc:"Retiros prioritarios — cola diferenciada proveedor",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[14,17],status:"blocked",dep:"PR-07"},
+  // ── BONOS Y RECOMPENSAS ──────────────────────────────────────────────────
+  {id:"BO-01",mod:"Bonos y Recompensas",tag:"Dev",desc:"Bono de bienvenida por registro — Freebet US$10",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[3,5],status:"done",dep:""},
+  {id:"BO-02",mod:"Bonos y Recompensas",tag:"Dev",desc:"Secuencia de bonos por depósito (3 depósitos)",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[4,6],status:"progress",dep:"IN-02"},
+  {id:"BO-03",mod:"Bonos y Recompensas",tag:"Dev",desc:"Bono de descarga APP — 50 PJ por device_id único",fase:"F1",prio:"Media",owner:"Dev Backend",sem:[5,7],status:"pending",dep:"IN-03"},
+  {id:"BO-04",mod:"Bonos y Recompensas",tag:"Config",desc:"Bono de recarga mensual VIP por nivel",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[13,15],status:"pending",dep:"NV-01"},
+  {id:"BO-05",mod:"Bonos y Recompensas",tag:"Dev",desc:"Leaderboard Top 3 referidores — acreditación mensual",fase:"F1",prio:"Media",owner:"Dev Backend",sem:[6,9],status:"pending",dep:"IN-07"},
+  {id:"BO-06",mod:"Bonos y Recompensas",tag:"Dev",desc:"Bono por acción en redes sociales — 30 PJ",fase:"F1",prio:"Baja",owner:"Dev Backend",sem:[7,9],status:"blocked",dep:"IN-05"},
+  // ── GAMIFICACIÓN ─────────────────────────────────────────────────────────
+  {id:"GM-01",mod:"Gamificación",tag:"Dev",desc:"Hitos internos Bronce — triggers 2500/5000/7500 PJ",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[5,7],status:"pending",dep:"PJ-01"},
+  {id:"GM-02",mod:"Gamificación",tag:"Dev",desc:"Bonus Boost temporal — multiplicador 2x o 3x por 1h",fase:"F1",prio:"Media",owner:"Dev Backend",sem:[6,8],status:"pending",dep:"PJ-01"},
+  {id:"GM-03",mod:"Gamificación",tag:"Dev",desc:"Misiones de inicio diarias con barra de progreso",fase:"F1",prio:"Media",owner:"Dev Frontend",sem:[6,9],status:"pending",dep:""},
+  {id:"GM-04",mod:"Gamificación",tag:"Dev",desc:"Misiones VIP semanales Silver",fase:"F2",prio:"Media",owner:"Dev Frontend",sem:[13,16],status:"pending",dep:"NV-01"},
+  {id:"GM-05",mod:"Gamificación",tag:"Dev",desc:"Misiones de rescate — disparo automático día 15",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[14,16],status:"pending",dep:"NV-04"},
+  {id:"GM-06",mod:"Gamificación",tag:"Dev",desc:"Motor de misiones personalizadas Platinum",fase:"F3",prio:"Media",owner:"Dev Backend",sem:[21,23],status:"pending",dep:"GM-05"},
+  {id:"GM-07",mod:"Gamificación",tag:"Dev",desc:"Tour guiado interactivo de onboarding",fase:"F1",prio:"Media",owner:"Dev Frontend",sem:[7,9],status:"pending",dep:""},
+  // ── TIENDA JEL ──────────────────────────────────────────────────────────
+  {id:"TJ-01",mod:"Tienda JEL",tag:"Dev",desc:"Canje PJ por Freebets/Freespins — tasa Bronce",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[7,9],status:"pending",dep:"PJ-01"},
+  {id:"TJ-02",mod:"Tienda JEL",tag:"Dev",desc:"Canje por cash retirable — Gold y Platinum",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[14,16],status:"pending",dep:"TJ-01"},
+  {id:"TJ-03",mod:"Tienda JEL",tag:"Dev",desc:"Canje por merchandising — verificar stock",fase:"F2",prio:"Media",owner:"Dev Backend",sem:[15,17],status:"pending",dep:"PR-04"},
+  {id:"TJ-04",mod:"Tienda JEL",tag:"Dev",desc:"Canje por experiencias culturales — código redención",fase:"F2",prio:"Baja",owner:"Dev Backend",sem:[16,17],status:"pending",dep:"PR-05"},
+  {id:"TJ-05",mod:"Tienda JEL",tag:"Dev",desc:"Bonus Boost por canje de PJ",fase:"F2",prio:"Media",owner:"Dev Backend",sem:[13,15],status:"pending",dep:"GM-02"},
+  {id:"TJ-06",mod:"Tienda JEL",tag:"Dev",desc:"Historial completo de canjes",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[8,9],status:"pending",dep:"TJ-01"},
+  {id:"TJ-07",mod:"Tienda JEL",tag:"Dev",desc:"Reversión de canje dentro de 24h",fase:"F2",prio:"Media",owner:"Dev Backend",sem:[15,16],status:"pending",dep:"TJ-01"},
+  // ── DASHBOARD ────────────────────────────────────────────────────────────
+  {id:"DB-01",mod:"Dashboard",tag:"Dev",desc:"Saldo PJ en tiempo real — latencia <30s",fase:"F1",prio:"Alta",owner:"Dev Frontend",sem:[5,8],status:"pending",dep:"PJ-01"},
+  {id:"DB-02",mod:"Dashboard",tag:"Dev",desc:"Barra de progreso al siguiente nivel",fase:"F1",prio:"Alta",owner:"Dev Frontend",sem:[6,8],status:"pending",dep:"NV-07"},
+  {id:"DB-03",mod:"Dashboard",tag:"Dev",desc:"Estado y contador de período de gracia",fase:"F2",prio:"Alta",owner:"Dev Frontend",sem:[14,15],status:"pending",dep:"NV-03"},
+  {id:"DB-04",mod:"Dashboard",tag:"Dev",desc:"Historial de PJ paginado con filtros",fase:"F1",prio:"Media",owner:"Dev Frontend",sem:[7,9],status:"pending",dep:"PJ-01"},
+  {id:"DB-05",mod:"Dashboard",tag:"Dev",desc:"Historial de canjes Tienda JEL",fase:"F1",prio:"Media",owner:"Dev Frontend",sem:[9,10],status:"pending",dep:"TJ-06"},
+  {id:"DB-06",mod:"Dashboard",tag:"Dev",desc:"Ranking de referidos en dashboard",fase:"F1",prio:"Media",owner:"Dev Frontend",sem:[8,10],status:"pending",dep:"BO-05"},
+  {id:"DB-07",mod:"Dashboard",tag:"Dev",desc:"Estimación de próximo cashback",fase:"F2",prio:"Baja",owner:"Dev Frontend",sem:[14,15],status:"pending",dep:"CB-01"},
+  // ── NOTIFICACIONES ────────────────────────────────────────────────────────
+  {id:"NT-01",mod:"Notificaciones",tag:"Dev",desc:"Notificación de upgrade de nivel",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[12,14],status:"pending",dep:"NV-02"},
+  {id:"NT-02",mod:"Notificaciones",tag:"Dev",desc:"Alerta de descenso — push + WhatsApp día 15",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[13,15],status:"pending",dep:"IN-06"},
+  {id:"NT-03",mod:"Notificaciones",tag:"Dev",desc:"Notificación cashback acreditado cada lunes",fase:"F1",prio:"Media",owner:"Dev Backend",sem:[5,7],status:"pending",dep:"CB-01,IN-08"},
+  {id:"NT-04",mod:"Notificaciones",tag:"Dev",desc:"Notificación de hito Bronce alcanzado",fase:"F1",prio:"Media",owner:"Dev Backend",sem:[6,7],status:"pending",dep:"GM-01"},
+  {id:"NT-05",mod:"Notificaciones",tag:"Dev",desc:"Notificación de degradación de nivel",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[15,16],status:"pending",dep:"NV-05"},
+  {id:"NT-06",mod:"Notificaciones",tag:"Dev",desc:"Integración WhatsApp Business API — panel gestor VIP",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[12,15],status:"pending",dep:"IN-06"},
+  // ── INTEGRACIONES ────────────────────────────────────────────────────────
+  {id:"IN-01",mod:"Integraciones",tag:"Dev",desc:"Webhook bet settlement — PJ en <5 segundos",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[1,4],status:"progress",dep:""},
+  {id:"IN-02",mod:"Integraciones",tag:"Dev",desc:"Webhook depósitos — bucket ISO semanal",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[2,4],status:"progress",dep:""},
+  {id:"IN-03",mod:"Integraciones",tag:"Dev",desc:"API wallet — acreditación idempotente",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[2,5],status:"progress",dep:""},
+  {id:"IN-04",mod:"Integraciones",tag:"Dev",desc:"API retiros prioritarios — nivel como parámetro",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[13,16],status:"blocked",dep:"PR-07"},
+  {id:"IN-05",mod:"Integraciones",tag:"Dev",desc:"APIs de redes sociales (Instagram, YT, TikTok, X)",fase:"F1",prio:"Baja",owner:"Dev Backend",sem:[7,9],status:"blocked",dep:"PR-06"},
+  {id:"IN-06",mod:"Integraciones",tag:"Dev",desc:"WhatsApp Business API — templates pre-aprobados",fase:"F2",prio:"Alta",owner:"Dev Backend",sem:[11,13],status:"pending",dep:"PR-08"},
+  {id:"IN-07",mod:"Integraciones",tag:"Dev",desc:"Sistema de tracking de referidos con enlace único",fase:"F1",prio:"Media",owner:"Dev Backend",sem:[5,7],status:"pending",dep:""},
+  {id:"IN-08",mod:"Integraciones",tag:"Dev",desc:"Proveedor email transaccional (ESP) — SPF/DKIM",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[2,4],status:"done",dep:""},
+  {id:"IN-09",mod:"Integraciones",tag:"Dev",desc:"Push notifications — FCM (Android) y APNs (iOS)",fase:"F1",prio:"Alta",owner:"Dev Backend",sem:[3,5],status:"progress",dep:""},
+  // ── REPORTING ────────────────────────────────────────────────────────────
+  {id:"RP-01",mod:"Reporting",tag:"Dev",desc:"Reporte mensual automático — costo por nivel vs GGR",fase:"F3",prio:"Alta",owner:"Datos Analyst",sem:[19,21],status:"pending",dep:""},
+  {id:"RP-02",mod:"Reporting",tag:"Datos",desc:"KPIs de salud del programa — cálculo mensual",fase:"F3",prio:"Alta",owner:"Datos Analyst",sem:[19,22],status:"pending",dep:"RP-01"},
+  {id:"RP-03",mod:"Reporting",tag:"Config",desc:"Alertas de desviación financiera +3 p.p.",fase:"F3",prio:"Alta",owner:"Datos Analyst",sem:[20,21],status:"pending",dep:"RP-01"},
+  {id:"RP-04",mod:"Reporting",tag:"Config",desc:"Umbrales de riesgo — cashback S/.45k y rakeback S/.7k",fase:"F3",prio:"Alta",owner:"Datos Analyst",sem:[20,21],status:"pending",dep:"CB-08"},
+  {id:"RP-05",mod:"Reporting",tag:"QA",desc:"Auditoría PJ: desviación aceptable <2%",fase:"F1",prio:"Alta",owner:"QA Eng",sem:[8,10],status:"pending",dep:"PJ-01"},
+  {id:"RP-06",mod:"Reporting",tag:"Dev",desc:"Panel backoffice — historial jugador y bonos manuales",fase:"F2",prio:"Media",owner:"Dev Frontend",sem:[14,18],status:"pending",dep:"DB-01"},
+  // ── LEGAL Y COMPLIANCE ───────────────────────────────────────────────────
+  {id:"LE-01",mod:"Legal y Compliance",tag:"Legal",desc:"Revisión y aprobación T&C del Club JEL completos",fase:"F1",prio:"Alta",owner:"Legal",sem:[1,3],status:"progress",dep:""},
+  {id:"LE-02",mod:"Legal y Compliance",tag:"Legal",desc:"Validación regulatoria rakeback ante MINCETUR/DGJCAH",fase:"F2",prio:"Alta",owner:"Legal",sem:[11,13],status:"pending",dep:""},
+  {id:"LE-03",mod:"Legal y Compliance",tag:"Legal",desc:"Actualizar T&C: tope cashback S/.350 y cuota mínima 1.50",fase:"F1",prio:"Alta",owner:"Legal",sem:[2,3],status:"done",dep:""},
+  {id:"LE-04",mod:"Legal y Compliance",tag:"Legal",desc:"Revisión legal de contratos con proveedores de experiencias",fase:"F2",prio:"Media",owner:"Legal",sem:[13,15],status:"pending",dep:"PR-05"},
+  {id:"LE-05",mod:"Legal y Compliance",tag:"Legal",desc:"Revisión legal contrato SLA con proveedor de pagos",fase:"F2",prio:"Alta",owner:"Legal",sem:[12,14],status:"pending",dep:"PR-07"},
+  {id:"LE-06",mod:"Legal y Compliance",tag:"Legal",desc:"T&C actualizados para niveles VIP — recarga y gracia",fase:"F2",prio:"Media",owner:"Legal",sem:[12,14],status:"pending",dep:"LE-01"},
+  // ── PROCESO Y OPERACIONES ────────────────────────────────────────────────
+  {id:"PR-01",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Definir protocolo de onboarding VIP Silver — acciones del gestor en 24h",fase:"F2",prio:"Alta",owner:"Ops/VIP",sem:[11,13],status:"pending",dep:""},
+  {id:"PR-02",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Asignación de Gestores VIP Gold y Platinum — protocolo WhatsApp",fase:"F2",prio:"Alta",owner:"Ops/VIP",sem:[12,14],status:"pending",dep:"PR-01"},
+  {id:"PR-03",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Definir y monitorear ratio máx. 80-100 jugadores por gestor",fase:"F2",prio:"Alta",owner:"Ops/VIP",sem:[11,12],status:"pending",dep:""},
+  {id:"PR-04",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Negociar y firmar contratos con proveedores de merchandising",fase:"F2",prio:"Media",owner:"Ops/VIP",sem:[13,15],status:"pending",dep:""},
+  {id:"PR-05",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Negociar convenio museos Lima y Cusco — entradas canjeables",fase:"F2",prio:"Baja",owner:"Ops/VIP",sem:[13,15],status:"pending",dep:""},
+  {id:"PR-06",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Registrar app en APIs de redes sociales y obtener permisos",fase:"F1",prio:"Baja",owner:"Ops/VIP",sem:[5,8],status:"pending",dep:""},
+  {id:"PR-07",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Negociar y firmar SLA con proveedor de pagos para retiros prioritarios",fase:"F2",prio:"Alta",owner:"Ops/VIP",sem:[11,13],status:"pending",dep:"LE-05"},
+  {id:"PR-08",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Solicitar aprobación Meta para templates WhatsApp Business (2-4 sem.)",fase:"F2",prio:"Alta",owner:"Ops/VIP",sem:[8,11],status:"pending",dep:""},
+  {id:"PR-09",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Negociar catálogo Platinum: palcos, viajes, regalos físicos",fase:"F2",prio:"Media",owner:"Ops/VIP",sem:[13,16],status:"pending",dep:""},
+  {id:"PR-10",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Establecer revisión trimestral de parámetros — primera: sem. 20",fase:"F3",prio:"Alta",owner:"Producto",sem:[19,20],status:"pending",dep:""},
+  {id:"PR-11",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Redactar manual operativo completo Club JEL",fase:"F3",prio:"Media",owner:"Ops/VIP",sem:[23,24],status:"pending",dep:""},
+  {id:"PR-12",mod:"Proceso y Operaciones",tag:"Proceso",desc:"Sesión planificación estratégica Roadmap 2027",fase:"F3",prio:"Baja",owner:"Producto",sem:[23,24],status:"pending",dep:""},
+  {id:"PR-13",mod:"Proceso y Operaciones",tag:"Proceso",desc:"A/B testing push vs email para alertas de descenso",fase:"F3",prio:"Media",owner:"Comms",sem:[21,22],status:"pending",dep:"NT-02"},
+  // ── COMUNICACIONES ───────────────────────────────────────────────────────
+  {id:"CM-01",mod:"Comunicaciones",tag:"Comms",desc:"Comunicar cambio tope cashback Bronce S/.525→S/.350 (push + email)",fase:"F1",prio:"Alta",owner:"Comms",sem:[2,3],status:"done",dep:"LE-03"},
+  {id:"CM-02",mod:"Comunicaciones",tag:"Comms",desc:"Comunicar lanzamiento Club JEL a toda la base de jugadores",fase:"F1",prio:"Alta",owner:"Comms",sem:[9,10],status:"pending",dep:"LE-01"},
+  {id:"CM-03",mod:"Comunicaciones",tag:"Comms",desc:"Comunicar rakeback Platinum a gestores VIP (no masivo)",fase:"F2",prio:"Alta",owner:"Comms",sem:[13,14],status:"pending",dep:"CB-05"},
+  {id:"CM-04",mod:"Comunicaciones",tag:"Comms",desc:"Comunicar nuevos beneficios VIP Silver al activarse el nivel",fase:"F2",prio:"Media",owner:"Comms",sem:[13,14],status:"pending",dep:"NV-02"},
+  {id:"CM-05",mod:"Comunicaciones",tag:"Comms",desc:"Comunicar Tienda JEL ampliada (merchandising y experiencias)",fase:"F2",prio:"Media",owner:"Comms",sem:[16,17],status:"pending",dep:"TJ-03"},
+  {id:"CM-06",mod:"Comunicaciones",tag:"Comms",desc:"Actualizar FAQ y centro de ayuda con mecánica del programa",fase:"F1",prio:"Media",owner:"Comms",sem:[8,10],status:"pending",dep:"LE-01"},
+  // ── DATOS Y ANÁLISIS ─────────────────────────────────────────────────────
+  {id:"DA-01",mod:"Datos y Análisis",tag:"Datos",desc:"Reporte de control: PJ acreditados vs modelo — desviación <2%",fase:"F1",prio:"Alta",owner:"Datos Analyst",sem:[9,10],status:"pending",dep:"PJ-01"},
+  {id:"DA-02",mod:"Datos y Análisis",tag:"Datos",desc:"Auditar cashback VIP: Silver/Gold 10%/12% sin tope, Platinum 5% diario",fase:"F2",prio:"Alta",owner:"Datos Analyst",sem:[14,15],status:"pending",dep:"CB-02"},
+  {id:"DA-03",mod:"Datos y Análisis",tag:"Datos",desc:"Monitorear ratio jugadores por gestor — alerta si supera 80",fase:"F2",prio:"Alta",owner:"Datos Analyst",sem:[12,18],status:"pending",dep:"PR-03"},
+  {id:"DA-04",mod:"Datos y Análisis",tag:"Datos",desc:"Reporting interno: conversión Bronce→Silver, cashback, CLV",fase:"F2",prio:"Media",owner:"Datos Analyst",sem:[15,18],status:"pending",dep:""},
+  {id:"DA-05",mod:"Datos y Análisis",tag:"Datos",desc:"Revisión trimestral VIP: evaluación estatus con datos reales",fase:"F2",prio:"Media",owner:"Datos Analyst",sem:[17,18],status:"pending",dep:""},
+  {id:"DA-06",mod:"Datos y Análisis",tag:"Datos",desc:"Revisión KPIs: conversión, churn, CLV, cashback vs proyectado",fase:"F3",prio:"Alta",owner:"Datos Analyst",sem:[19,20],status:"pending",dep:"RP-01"},
+  {id:"DA-07",mod:"Datos y Análisis",tag:"Datos",desc:"Evaluar sostenibilidad financiera: cashback/rakeback real vs modelo",fase:"F3",prio:"Alta",owner:"Datos Analyst",sem:[19,20],status:"pending",dep:"RP-01"},
+  {id:"DA-08",mod:"Datos y Análisis",tag:"Datos",desc:"Ajuste hitos Bronce si conversión a VIP Silver <8% en 90 días",fase:"F3",prio:"Media",owner:"Datos Analyst",sem:[20,21],status:"pending",dep:"DA-06"},
+  {id:"DA-09",mod:"Datos y Análisis",tag:"Datos",desc:"Segmentación Bronce de alto potencial — modelo de propensión",fase:"F3",prio:"Media",owner:"Datos Analyst",sem:[21,22],status:"pending",dep:"DA-06"},
+  {id:"DA-10",mod:"Datos y Análisis",tag:"Datos",desc:"Análisis preferencias de canje Tienda JEL para expansión catálogo",fase:"F3",prio:"Media",owner:"Datos Analyst",sem:[21,22],status:"pending",dep:"TJ-06"},
+  {id:"DA-11",mod:"Datos y Análisis",tag:"Datos",desc:"Optimizar periodicidad leaderboard referidos (mensual vs quincenal)",fase:"F3",prio:"Baja",owner:"Datos Analyst",sem:[21,22],status:"pending",dep:"BO-05"},
+  // ── QA TRANSVERSAL ───────────────────────────────────────────────────────
+  {id:"QA-01",mod:"Proceso y Operaciones",tag:"QA",desc:"Verificar documentación técnica existente (modelo de datos y APIs)",fase:"F1",prio:"Alta",owner:"QA Eng",sem:[1,2],status:"done",dep:""},
+  {id:"QA-02",mod:"Proceso y Operaciones",tag:"QA",desc:"Auditoría 20 usuarios Bronce: PJ acreditados vs esperados",fase:"F1",prio:"Alta",owner:"QA Eng",sem:[8,10],status:"pending",dep:"PJ-01"},
+  {id:"QA-03",mod:"Proceso y Operaciones",tag:"QA",desc:"Verificar cuota mínima 1.50 en apuestas combinadas/múltiples",fase:"F1",prio:"Alta",owner:"QA Eng",sem:[6,8],status:"pending",dep:"PJ-01"},
+  {id:"QA-04",mod:"Proceso y Operaciones",tag:"QA",desc:"Prueba rakeback con 3 usuarios Platinum — verificar montos",fase:"F2",prio:"Alta",owner:"QA Eng",sem:[12,13],status:"pending",dep:"CB-05"},
+  {id:"QA-05",mod:"Proceso y Operaciones",tag:"QA",desc:"Simular descenso de nivel — verificar gracia y notificaciones",fase:"F2",prio:"Alta",owner:"QA Eng",sem:[15,16],status:"pending",dep:"NV-05"},
+  {id:"QA-06",mod:"Proceso y Operaciones",tag:"QA",desc:"Pruebas de stress motor PJ bajo carga alta (10x tráfico normal)",fase:"F3",prio:"Alta",owner:"QA Eng",sem:[23,24],status:"pending",dep:""},
+];
+
+const ALERTS_DATA=[
+  {type:"blocked",title:"CB-05 bloqueado — Rakeback Platinum",desc:"Requiere aprobación legal MINCETUR/DGJCAH (LE-02) antes de iniciar el desarrollo. Sin aprobación el rakeback no puede activarse.",fix:"Legal (LE-02): iniciar trámite MINCETUR en sem. 11",fase:"F2"},
+  {type:"blocked",title:"NV-08 / IN-04 bloqueados — Retiros prioritarios",desc:"Dependen del contrato SLA con el proveedor de pagos (PR-07 + LE-05). Proceso y Legal deben cerrar antes de que Dev inicie.",fix:"Ops (PR-07) + Legal (LE-05): cerrar contrato sem. 11-13",fase:"F2"},
+  {type:"blocked",title:"IN-05 / BO-06 bloqueados — APIs de redes sociales",desc:"Requieren registro de la app en cada plataforma y aprobación de permisos. Sin eso Dev no puede integrar.",fix:"Ops (PR-06): registrar app en plataformas sem. 5-8",fase:"F1"},
+  {type:"warning",title:"PR-08 urgente — Templates WhatsApp requieren 2-4 semanas",desc:"Meta tarda 2-4 semanas en aprobar templates. Si no se inicia en sem. 8, bloquea NT-06 e IN-06 en Fase 2.",fix:"Ops (PR-08): iniciar solicitud Meta sem. 8 — no esperar a F2",fase:"F2"},
+  {type:"warning",title:"Orden crítico de jobs: PJ-09 debe ir antes que NV-01",desc:"El job de reseteo mensual de PJ debe ejecutarse DESPUÉS de la evaluación de nivel. Si se invierten, todos los jugadores tendrán 0 PJ al evaluar.",fix:"Dev: añadir dependencia de job en el orquestador",fase:"F1"},
+  {type:"info",title:"Próximo hito — Semana 10",desc:"Parámetros Bronce validados con 0 discrepancias. Verificar: PJ-01, CB-01, NV-07, IN-01, IN-02, RP-05, QA-02, LE-03, CM-01.",fix:"",fase:"F1"},
+];
+
+const CHANGELOG=[
+  {time:"Hoy 09:14",text:"<strong>NV-07</strong> marcado como Completado — umbrales Level_Config aplicados en prod.",user:"Dev Backend"},
+  {time:"Hoy 09:11",text:"<strong>BO-01</strong> marcado como Completado — Freebet US$10 bienvenida activa.",user:"Dev Backend"},
+  {time:"Hoy 09:08",text:"<strong>QA-01</strong> marcado como Completado — documentación técnica verificada.",user:"QA Eng"},
+  {time:"Hoy 08:52",text:"<strong>CM-01</strong> marcado como Completado — comunicado tope cashback enviado.",user:"Comms"},
+  {time:"Hoy 08:45",text:"<strong>LE-03</strong> marcado como Completado — T&C actualizados y publicados.",user:"Legal"},
+  {time:"Ayer 17:22",text:"<strong>IN-08</strong> marcado como Completado — ESP configurado con SPF/DKIM/DMARC.",user:"Dev Backend"},
+  {time:"Ayer 15:30",text:"<strong>IN-04</strong> marcado como Bloqueado — contrato proveedor pagos pendiente.",user:"Tech Lead"},
+  {time:"Ayer 14:10",text:"<strong>IN-01</strong> pasó a En progreso — webhook bet settlement integrado.",user:"Dev Backend"},
+];
+
+let changelog=[...CHANGELOG];
+let currentFilter={phase:null,tag:null,status:'all',search:''};
+let currentRole='';
+let pendingAction=null;
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+const ROLES={
+  'admin123': {name:'Admin',     canEdit:true,  canReset:true,  canClearLog:true},
+  'vip2026':  {name:'VIP Ops',   canEdit:true,  canReset:false, canClearLog:false},
+  'viewer':   {name:'Solo lectura', canEdit:false, canReset:false, canClearLog:false},
+};
+function checkAuth(){
+  const key=document.getElementById('auth-input').value.trim();
+  const role=ROLES[key];
+  if(!role){
+    document.getElementById('auth-error').textContent='Clave incorrecta. Intenta de nuevo.';
+    document.getElementById('auth-input').value='';
+    document.getElementById('auth-input').focus();
+    return;
+  }
+  currentRole=role;
+  document.getElementById('auth-modal').style.display='none';
+  document.getElementById('main-app').style.display='grid';
+  document.getElementById('role-badge').textContent=role.name;
+  if(!role.canReset)  document.getElementById('btn-reset').style.display='none';
+  if(!role.canClearLog) document.getElementById('btn-clear-log').style.display='none';
+  renderAll();
+}
+
+// ── CONFIRM MODAL ────────────────────────────────────────────────────────────
+function openConfirm(action){
+  pendingAction=action;
+  const configs={
+    reset:    {icon:'⚠️', title:'Reiniciar todas las actividades', sub:'Todas las actividades volverán a estado Pendiente. El historial se conservará.'},
+    clearlog: {icon:'🗑️', title:'Borrar historial de cambios',    sub:'Se eliminarán todos los registros del historial. Esta acción no se puede deshacer.'},
+  };
+  const c=configs[action];
+  document.getElementById('confirm-icon').textContent=c.icon;
+  document.getElementById('confirm-title').textContent=c.title;
+  document.getElementById('confirm-sub').textContent=c.sub;
+  document.getElementById('confirm-modal').style.display='flex';
+}
+function closeConfirm(){
+  document.getElementById('confirm-modal').style.display='none';
+  pendingAction=null;
+}
+function confirmAction(){
+  if(pendingAction==='reset'){
+    T.forEach(t=>{
+      if(t.status!=='pending'){
+        changelog.unshift({time:'Ahora',text:`<strong>${t.id}</strong> reiniciado a "Pendiente"`,user:currentRole.name});
+        t.status='pending';
+      }
+    });
+    changelog.unshift({time:'Ahora',text:'<strong>Reinicio global</strong> — todas las actividades vuelven a Pendiente.',user:currentRole.name});
+  } else if(pendingAction==='clearlog'){
+    changelog=[];
+  }
+  closeConfirm();
+  renderAll();
+}
+
+function statusConfig(s){
+  return {
+    done:    {label:"Completado",  dot:"#27500A",bg:"#EAF3DE",fg:"#27500A"},
+    progress:{label:"En progreso", dot:"#185FA5",bg:"#E6F1FB",fg:"#185FA5"},
+    review:  {label:"En revisión", dot:"#854F0B",bg:"#FAEEDA",fg:"#854F0B"},
+    blocked: {label:"Bloqueado",   dot:"#A32D2D",bg:"#FCEBEB",fg:"#A32D2D"},
+    pending: {label:"Pendiente",   dot:"#9ca3af",bg:"#f3f4f6",fg:"#6b7280"},
+  }[s]||{label:"Pendiente",dot:"#9ca3af",bg:"#f3f4f6",fg:"#6b7280"};
+}
+function prioColor(p){return {Alta:"#A32D2D",Media:"#854F0B",Baja:"#27500A"}[p]||"#6b7280"}
+
+function cycleStatus(id){
+  if(currentRole&&!currentRole.canEdit){
+    alert('Tu rol es Solo lectura. No puedes cambiar estados.');
+    return;
+  }
+  const t=T.find(x=>x.id===id);if(!t)return;
+  const cycle=['pending','progress','review','done','blocked'];
+  const prev=t.status;
+  t.status=cycle[(cycle.indexOf(t.status)+1)%cycle.length];
+  const now=new Date();
+  const timeStr=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  changelog.unshift({time:'Hoy '+timeStr,text:`<strong>${t.id}</strong> cambió a "${statusConfig(t.status).label}"`,user:currentRole?currentRole.name:t.owner});
+  renderAll();
+}
+
+function getFiltered(){
+  return T.filter(t=>{
+    if(currentFilter.phase&&t.fase!==currentFilter.phase)return false;
+    if(currentFilter.tag&&t.tag!==currentFilter.tag)return false;
+    if(currentFilter.status!=='all'&&t.status!==currentFilter.status)return false;
+    if(currentFilter.search){
+      const q=currentFilter.search.toLowerCase();
+      if(!t.id.toLowerCase().includes(q)&&!t.desc.toLowerCase().includes(q)&&!t.mod.toLowerCase().includes(q)&&!t.tag.toLowerCase().includes(q))return false;
+    }
+    return true;
+  });
+}
+
+function renderMetrics(){
+  const done=T.filter(t=>t.status==='done').length;
+  const prog=T.filter(t=>t.status==='progress').length;
+  const blk=T.filter(t=>t.status==='blocked').length;
+  const n=T.length;
+  document.getElementById('m-total').textContent=n;
+  document.getElementById('m-done').textContent=done;
+  document.getElementById('m-prog').textContent=prog;
+  document.getElementById('m-block').textContent=blk;
+  document.getElementById('m-pct-done').textContent=Math.round(done/n*100)+'% completado';
+  document.getElementById('m-done-bar').style.width=Math.round(done/n*100)+'%';
+  document.getElementById('m-prog-bar').style.width=Math.round(prog/n*100)+'%';
+  document.getElementById('m-block-sub').textContent=blk?`${blk} requieren atención`:'';
+  document.getElementById('total-count').textContent=n;
+  document.getElementById('alert-count').textContent=ALERTS_DATA.filter(a=>a.type==='blocked').length;
+  ['F1','F2','F3'].forEach(ph=>{
+    const sub=T.filter(t=>t.fase===ph);
+    const d=sub.filter(t=>t.status==='done').length;
+    document.getElementById(`${ph.toLowerCase()}-count`).textContent=sub.length;
+    document.getElementById(`${ph.toLowerCase()}-bar`).style.width=sub.length?Math.round(d/sub.length*100)+'%':'0%';
+  });
+}
+
+function renderTagLegend(){
+  const el=document.getElementById('tag-legend');if(!el)return;
+  const counts={};
+  T.forEach(t=>{counts[t.tag]=(counts[t.tag]||0)+1});
+  el.innerHTML=Object.entries(TAG_COLORS).map(([tag,c])=>{
+    const n=counts[tag]||0;
+    return `<div class="tag-legend-item"><span class="tag-pill" style="background:${c.bg};color:${c.fg}">${tag}</span><span style="color:var(--dgray)">${n} actividades</span></div>`;
+  }).join('');
+}
+
+function renderGanttMini(){
+  const mods=Object.keys(MODULES);
+  let html='<div style="min-width:580px">';
+  html+='<div style="display:grid;grid-template-columns:170px 1fr;gap:6px;margin-bottom:6px">';
+  html+='<div style="font-size:10px;color:var(--dgray);font-weight:500">Módulo</div><div style="display:flex;gap:2px">';
+  for(let i=1;i<=24;i++) html+=`<div style="flex:1;text-align:center;font-size:9px;color:${i===CW?'#C9A84C':'var(--dgray)'};font-weight:${i===CW?700:400}">${i<=10?i:(i%4===0?i:'')}</div>`;
+  html+='</div></div>';
+  mods.forEach(mod=>{
+    const m=MODULES[mod];
+    const tasks=T.filter(t=>t.mod===mod);
+    html+=`<div style="display:grid;grid-template-columns:170px 1fr;gap:6px;margin-bottom:3px;align-items:center">`;
+    html+=`<div style="font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${mod}">${mod}</div>`;
+    html+=`<div style="display:flex;gap:2px;height:12px;align-items:center">`;
+    for(let i=1;i<=24;i++){
+      const inR=i>=m.weeks[0]&&i<=m.weeks[1];
+      const wt=tasks.filter(t=>t.sem&&i>=t.sem[0]&&i<=t.sem[1]);
+      let color=m.color;
+      if(inR&&wt.length){
+        if(wt.some(t=>t.status==='blocked'))color='#A32D2D';
+        else if(wt.some(t=>t.status==='progress'))color='#378ADD';
+        else if(wt.every(t=>t.status==='done'))color='#1D9E75';
+      }
+      html+=`<div style="flex:1;height:10px;border-radius:2px;background:${inR?color:'#e0e0de'};opacity:${inR?1:.3};${i===CW&&inR?'outline:1.5px solid #C9A84C':''}"></div>`;
+    }
+    html+='</div></div>';
+  });
+  html+='</div>';
+  document.getElementById('gantt-mini').innerHTML=html;
+}
+
+function renderGanttFull(){
+  const el=document.getElementById('gantt-full');if(!el)return;
+  const mods=Object.keys(MODULES);
+  let html='<div style="min-width:700px">';
+  html+='<div style="display:flex;gap:16px;font-size:11px;color:var(--dgray);margin-bottom:12px">';
+  ['#1D9E75','#378ADD','#A32D2D','#e0e0de','#C9A84C'].forEach((c,i)=>{
+    const labels=['Completado','En progreso','Bloqueado','Inactivo','Sem. actual'];
+    html+=`<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:8px;background:${c};border-radius:2px;${i===4?'outline:2px solid #C9A84C':''}"></span>${labels[i]}</span>`;
+  });
+  html+='</div>';
+  html+='<div style="display:grid;grid-template-columns:170px 1fr;gap:6px;margin-bottom:8px">';
+  html+='<div style="font-size:10px;color:var(--dgray);font-weight:500">Módulo</div><div style="display:flex;gap:2px">';
+  for(let i=1;i<=24;i++) html+=`<div style="flex:1;text-align:center;font-size:9px;color:${i===CW?'#C9A84C':'var(--dgray)'};font-weight:${i===CW?700:400}">${i}</div>`;
+  html+='</div></div>';
+  mods.forEach(mod=>{
+    const m=MODULES[mod];const tasks=T.filter(t=>t.mod===mod);
+    const done=tasks.filter(t=>t.status==='done').length;
+    const prog=tasks.filter(t=>t.status==='progress').length;
+    const blk=tasks.filter(t=>t.status==='blocked').length;
+    html+=`<div style="display:grid;grid-template-columns:170px 1fr;gap:6px;margin-bottom:2px;align-items:center">`;
+    html+=`<div style="font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${mod}">${mod}</div><div style="display:flex;gap:2px;height:14px">`;
+    for(let i=1;i<=24;i++){
+      const inR=i>=m.weeks[0]&&i<=m.weeks[1];
+      const wt=tasks.filter(t=>t.sem&&i>=t.sem[0]&&i<=t.sem[1]);
+      let color=m.color;
+      if(inR&&wt.length){
+        if(wt.some(t=>t.status==='blocked'))color='#A32D2D';
+        else if(wt.some(t=>t.status==='progress'))color='#378ADD';
+        else if(wt.every(t=>t.status==='done'))color='#1D9E75';
+      }
+      html+=`<div style="flex:1;height:14px;border-radius:2px;background:${inR?color:'#e0e0de'};opacity:${inR?1:.3};${i===CW&&inR?'outline:2px solid #C9A84C':''}"></div>`;
+    }
+    html+=`</div></div>`;
+    html+=`<div style="display:grid;grid-template-columns:170px 1fr;gap:6px;margin-bottom:6px"><div></div>`;
+    html+=`<div style="font-size:10px;color:var(--dgray)">${tasks.length} actividades · ${done} ✓ · ${prog} en curso${blk?` · <span style="color:#A32D2D">${blk} bloqueadas</span>`:''}</div></div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function renderAlerts(targetId){
+  const el=document.getElementById(targetId);if(!el)return;
+  const colors={
+    blocked:{bg:'#FCEBEB',border:'#A32D2D',icon:'!'},
+    warning:{bg:'#FAEEDA',border:'#854F0B',icon:'!'},
+    info:   {bg:'#E6F1FB',border:'#185FA5',icon:'i'},
+  };
+  el.innerHTML=ALERTS_DATA.map(a=>{
+    const c=colors[a.type];
+    return `<div class="alert-card" style="background:${c.bg};border-color:${c.border}">
+      <div style="width:18px;height:18px;border-radius:50%;background:${c.border};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${c.icon}</div>
+      <div class="alert-text"><strong>${a.title}</strong> <span style="font-size:10px;background:${c.bg};color:${c.border};padding:1px 6px;border-radius:10px;border:0.5px solid ${c.border};margin-left:4px">${a.fase}</span><br>${a.desc}${a.fix?`<br><span style="color:${c.border};font-weight:600;font-size:11px">Acción: ${a.fix}</span>`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderChangelog(){
+  const el=document.getElementById('changelog-list');if(!el)return;
+  el.innerHTML=changelog.map(c=>`
+    <div class="changelog-item">
+      <div class="cl-time">${c.time}<br><span style="font-size:10px;color:var(--dgray)">${c.user}</span></div>
+      <div class="cl-text">${c.text}</div>
+    </div>`).join('');
+}
+
+function renderTaskSections(){
+  const el=document.getElementById('task-sections');if(!el)return;
+  const filtered=getFiltered();
+  const mods=[...new Set(filtered.map(t=>t.mod))];
+  if(!mods.length){el.innerHTML='<div style="padding:24px;color:var(--dgray);text-align:center;background:#fff;border-radius:10px;border:0.5px solid var(--mgray)">No hay actividades que coincidan.</div>';return;}
+  el.innerHTML=mods.map(mod=>{
+    const mt=filtered.filter(t=>t.mod===mod);
+    const m=MODULES[mod]||{color:'#888',light:'#f3f4f2'};
+    const done=mt.filter(t=>t.status==='done').length;
+    const pct=Math.round(done/mt.length*100);
+    const rows=mt.map(t=>{
+      const sc=statusConfig(t.status);
+      const tc=TAG_COLORS[t.tag]||{bg:'#f3f4f6',fg:'#6b7280'};
+      const oc=OWNER_COLORS[(OWNERS[t.owner]||0)%OWNER_COLORS.length];
+      return `<tr>
+        <td style="width:70px"><span class="task-id">${t.id}</span></td>
+        <td style="width:35%">${t.desc}</td>
+        <td style="width:70px"><span class="tag-pill" style="background:${tc.bg};color:${tc.fg}">${t.tag}</span></td>
+        <td style="width:50px;text-align:center"><span class="prio-dot" style="background:${prioColor(t.prio)}"></span></td>
+        <td style="width:45px;text-align:center;font-size:11px;color:var(--dgray)">${t.fase}</td>
+        <td style="width:55px;text-align:center;font-size:11px;color:var(--dgray)">${t.sem?t.sem[0]+'-'+t.sem[1]:'-'}</td>
+        <td style="width:120px"><div style="display:flex;align-items:center;gap:5px"><div class="owner-avatar" style="background:${oc}">${t.owner.split(' ').map(w=>w[0]).join('').slice(0,2)}</div><span style="font-size:11px;color:var(--dgray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px">${t.owner}</span></div></td>
+        <td style="width:100px"><span class="dep-badge">${t.dep||'—'}</span></td>
+        <td style="width:110px"><span class="status-pill" style="background:${sc.bg};color:${sc.fg}" onclick="cycleStatus('${t.id}')"><span class="status-dot" style="background:${sc.dot}"></span>${sc.label}</span></td>
+      </tr>`;
+    }).join('');
+    return `<div class="task-section">
+      <div class="task-section-header" onclick="toggleSection('s-${mod.replace(/[\s\/]/g,'-')}',this)">
+        <div class="task-section-title">
+          <div style="width:10px;height:10px;border-radius:50%;background:${m.color}"></div>
+          ${mod}
+          <span style="font-size:11px;color:var(--dgray);font-weight:400">${mt.length} actividades</span>
+        </div>
+        <div class="section-meta">
+          <div class="progress-bar" style="width:80px"><div class="progress-bar-fill" style="width:${pct}%;background:${m.color}"></div></div>
+          <span>${pct}%</span>
+          <span class="chevron">&#9660;</span>
+        </div>
+      </div>
+      <div class="task-table-wrap" id="s-${mod.replace(/[\s\/]/g,'-')}" style="max-height:3000px">
+        <table class="task-table">
+          <thead><tr><th>ID</th><th>Actividad</th><th>Tipo</th><th>Prio.</th><th>Fase</th><th>Sem.</th><th>Responsable</th><th>Depende de</th><th>Estado</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSection(id,hdr){
+  const el=document.getElementById(id);if(!el)return;
+  const open=el.style.maxHeight!=='0px'&&el.style.maxHeight!=='';
+  el.style.maxHeight=open?'0px':'3000px';
+  hdr?.closest('.task-section')?.classList.toggle('collapsed',open);
+}
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  btn?.classList.add('active');
+  if(id==='gantt')renderGanttFull();
+  if(id==='alerts')renderAlerts('alerts-full');
+  if(id==='changelog')renderChangelog();
+}
+
+function filterStatus(s,btn){
+  currentFilter.status=s;
+  document.querySelectorAll('.filter-bar .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn?.classList.add('active');
+  renderTaskSections();
+}
+function filterPhase(ph){
+  currentFilter.phase=currentFilter.phase===ph?null:ph;
+  currentFilter.status='all';
+  showPage('tasks',document.querySelector('.nav-item:nth-child(2)'));
+  renderTaskSections();
+}
+function filterTag(tag){
+  currentFilter.tag=currentFilter.tag===tag?null:tag;
+  currentFilter.status='all';
+  showPage('tasks',document.querySelector('.nav-item:nth-child(2)'));
+  renderTaskSections();
+}
+function searchTasks(q){currentFilter.search=q;renderTaskSections();}
+
+function exportCSV(){
+  const h=['ID','Módulo','Tipo','Descripción','Fase','Prioridad','Sem. inicio','Sem. fin','Responsable','Depende de','Estado'];
+  const rows=T.map(t=>[t.id,t.mod,t.tag,`"${t.desc}"`,t.fase,t.prio,t.sem?t.sem[0]:'',t.sem?t.sem[1]:'',t.owner,t.dep||'',statusConfig(t.status).label]);
+  const csv=[h,...rows].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='Club_JEL_Tracker.csv';a.click();
+}
+
+function renderAll(){
+  renderMetrics();
+  renderTagLegend();
+  renderGanttMini();
+  renderAlerts('alerts-list');
+  renderChangelog();
+  renderTaskSections();
+}
+
+function logout(){
+  currentRole='';
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('auth-modal').style.display='flex';
+  document.getElementById('auth-input').value='';
+  document.getElementById('auth-error').textContent='';
+  document.getElementById('auth-input').focus();
+}
+document.getElementById('auth-input').focus();
+</script>
+</html>
